@@ -3,8 +3,8 @@ import pandas as pd
 import argparse as ap
 
 from colorama import Fore, Style
-from utils.logs import printError, printLog, printInfo
 from utils.model import Model, Network, Layers
+from utils.tools import printError, printLog, printInfo, getData
 
 def printNetwork(network):
     for i, layer in enumerate(network.layers):
@@ -22,10 +22,10 @@ def parsing():
         description='training model to detect malignant or benin tumors',
         )
     parser.add_argument('dataFile', help='the csv data file')
-    parser.add_argument('-e', '--epochs', type=int, help='the number of epochs')
-    parser.add_argument('-L', '--learning_rate', type=float, help='the learning rate')
-    parser.add_argument('-l', '--loss', help='the loss fonction')
-    parser.add_argument('-b', '--batch', type=int, help='the batchs size')
+    parser.add_argument('-e', '--epochs', type=int, default=100, help='the number of epochs')
+    parser.add_argument('-L', '--learning_rate', type=float, default=0.1, help='the learning rate')
+    parser.add_argument('-l', '--loss', default='binaryCrossentropy', help='the loss fonction')
+    parser.add_argument('-b', '--batch', type=int, default=10, help='the batchs size')
     return parser.parse_args()
 
 
@@ -39,33 +39,24 @@ def splitData(dataFile):
     training_data = dataset.iloc[:nb_trainingData]
     test_data = dataset.iloc[nb_trainingData:]
 
-    training_data.to_csv('utils/datasets/training_data.csv', index=False, header=False)
-    test_data.to_csv('utils/datasets/validation_data.csv', index=False, header=False)
+    training_data.to_csv('datasets/training_data.csv', index=False, header=False)
+    test_data.to_csv('datasets/validation_data.csv', index=False, header=False)
     printInfo('Done')
 
 
-
 def training(args):
-    #input_shape
-    #output_shape
-    #data_train
-    #data_valid
-    #loss
-    #learning_rate
-    #batch_size
-    #epochs
-    input_shape = [30, 24]
-    output_shape = 2
-
-    network = Model.createNetwork([
-        Layers.DenseLayer(input_shape, activation='sigmoid'),
-        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
-        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
-        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
-        Layers.DenseLayer(output_shape, activation='softmax', weights_initializer='heUniform')
-    ])
-
-    breakpoint()###############################   ICI
+    data_train, data_valid, normData = getData()
+#    input_shape = getInputShape()  ########################     ICI
+#    output_shape = getOutputShape()
+#
+#    network = Model.createNetwork([
+#        Layers.DenseLayer(input_shape, activation='sigmoid'),
+#        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
+#        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
+#        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
+#        Layers.DenseLayer(output_shape, activation='softmax', weights_initializer='heUniform')
+#    ])
+#
 #    Model.fit(network, data_train, data_valid, loss='binaryCrossentropy', learning_rate=learningRate, batch_size=batchSize, epochs=epoch)
 
 
