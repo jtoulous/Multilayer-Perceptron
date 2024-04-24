@@ -1,7 +1,17 @@
 import pandas as pd
+import copy
 
 from statistics import mean, stdev
 from colorama import Fore, Style
+
+class Data:
+    def __init__(self, data_train, data_valid, normData, features):
+        self.data_train = copy.deepcopy(data_train)
+        self.data_valid = copy.deepcopy(data_valid)
+        self.normData = copy.deepcopy(normData)
+        self.features = copy.deepcopy(features)
+
+
 
 def printLog(message):
     print(f"{Fore.GREEN}{message}{Style.RESET_ALL}")
@@ -15,6 +25,15 @@ def printInfo(message):
 def newCmd():
     print ('\n======================================================\n')
 
+def printNetwork(network):
+    for i, layer in enumerate(network.layers):
+        print(f'layer {i}:\n'
+              f'   activation = {layer.activation}\n'
+              f'   weight initializer = {layer.weights_initializer}\n'
+              f'   type = {layer.type}\n'
+              f'   neurons = {len(layer.neurons)}\n'
+              f'   prev layer shape = {layer.prevLayerShape}\n'
+              f'   shape = {layer.shape}\n')
 
 
 def normalize(mean, std, value):
@@ -118,4 +137,17 @@ def getData():
             newData['features'][feature] = df_valid[feature][i]
         data_valid.append(newData)
 
-    return data_train, data_valid, normData
+    return Data(data_train, data_valid, normData, featuresToUse)
+
+def getOutputShape(*dataframes):
+    fullSet = []
+    labelsEncountered = []
+
+    for dataframe in dataframes:
+        fullSet.extend(dataframe)
+
+    for data in fullSet:
+        if data['label'] not in labelsEncountered:
+            labelsEncountered.append(data['label'])
+    return len(labelsEncountered)
+

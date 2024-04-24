@@ -4,17 +4,7 @@ import argparse as ap
 
 from colorama import Fore, Style
 from utils.model import Model, Network, Layers
-from utils.tools import printError, printLog, printInfo, getData
-
-def printNetwork(network):
-    for i, layer in enumerate(network.layers):
-        print(f'layer {i}:\n'
-              f'   activation = {layer.activation}\n'
-              f'   weight initializer = {layer.weights_initializer}\n'
-              f'   type = {layer.type}\n'
-              f'   neurons = {len(layer.neurons)}\n'
-              f'   prev layer shape = {layer.prevLayerShape}\n'
-              f'   shape = {layer.shape}\n')
+from utils.tools import printError, printLog, printInfo, getData, printNetwork, getOutputShape
 
 def parsing():
     parser = ap.ArgumentParser(
@@ -45,19 +35,18 @@ def splitData(dataFile):
 
 
 def training(args):
-    data_train, data_valid, normData = getData()
-#    input_shape = getInputShape()  ########################     ICI
-#    output_shape = getOutputShape()
-#
-#    network = Model.createNetwork([
-#        Layers.DenseLayer(input_shape, activation='sigmoid'),
-#        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
-#        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
-#        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
-#        Layers.DenseLayer(output_shape, activation='softmax', weights_initializer='heUniform')
-#    ])
-#
-#    Model.fit(network, data_train, data_valid, loss='binaryCrossentropy', learning_rate=learningRate, batch_size=batchSize, epochs=epoch)
+    data = getData()
+    input_shape = [len(data.features), 24]
+    output_shape = getOutputShape(data.data_train, data.data_valid)
+
+    network = Model.createNetwork([
+        Layers.DenseLayer(input_shape, activation='sigmoid'),
+        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
+        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
+        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
+        Layers.DenseLayer(output_shape, activation='softmax', weights_initializer='heUniform')
+    ])
+#    Model.fit(network, data, loss='binaryCrossentropy', learning_rate=learningRate, batch_size=batchSize, epochs=epoch)
 
 
 if __name__ == '__main__':

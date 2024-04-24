@@ -6,8 +6,20 @@ class Model:
         return Network(layers)
 
     @staticmethod
-    def fit(self):
-        return 0
+    def fit(network, data, loss, learning_rate, batch_size, epochs):
+        cost_history = []
+        
+        for epoch in range(epochs):
+            batches = getBatches(data.data_train)
+            
+            for batch in batches:
+                for layer in network.layers:
+                    batch = activateNeurons(layer, batch)
+
+                cost_history.append(getCost(loss))
+                retropropagation(network, batch)
+
+
 
 
 class Network:
@@ -31,9 +43,11 @@ class Layers:
 
     def initWeights(self):
         if self.weights_initializer == 'heUniform':
-            weightsList = heUniform([self.shape, self.prevLayerShape])     
+            weightsList = list(heUniform([self.shape, self.prevLayerShape + 1]))     
         for i, neuron in enumerate(self.neurons):
-            neuron.weights = weightsList[i].copy()
+            weights = list(weightsList[i])
+            neuron.bias = weights.pop()
+            neuron.weights = weights.copy()
 
     @staticmethod
     def DenseLayer(shape, activation='sigmoid', weights_initializer='heUniform'):
@@ -44,4 +58,5 @@ class Neuron:
     def __init__(self):
         self.weights = []
         self.bias = None
-        self.activationResult = None
+        self.activationResults = None
+        self.scores
