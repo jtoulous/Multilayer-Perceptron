@@ -139,7 +139,7 @@ def getData():
 
     return Data(data_train, data_valid, normData, featuresToUse)
 
-def getOutputShape(*dataframes):
+def getLabels(*dataframes):
     fullSet = []
     labelsEncountered = []
 
@@ -149,5 +149,5 @@ def getOutputShape(*dataframes):
     for data in fullSet:
         if data['label'] not in labelsEncountered:
             labelsEncountered.append(data['label'])
-    return len(labelsEncountered)
+    return labelsEncountered
 

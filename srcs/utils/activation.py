@@ -7,15 +7,10 @@ def calcScore(data, weights, bias):
     return score + bias
 
 
-def calcActivation(score, activation): ################  REFAIRE
-    if activation == "sigmoid":
-        return sigmoid(score)
-    elif activation == "softmax":
-        return softmax()
-
-    else:
-        raise Exception(f'Error: {activation} not available')
-
-
 def sigmoid(score):
     return 1 / (1 + math.exp(-score))
+
+
+def softmax(value, *scores):
+    totalScores = sum(math.exp(score) for score in scores)
+    return math.exp(value) / totalScores

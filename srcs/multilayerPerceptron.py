@@ -4,7 +4,7 @@ import argparse as ap
 
 from colorama import Fore, Style
 from utils.model import Model, Network, Layers
-from utils.tools import printError, printLog, printInfo, getData, printNetwork, getOutputShape
+from utils.tools import printError, printLog, printInfo, getData, printNetwork, getLabels
 
 def parsing():
     parser = ap.ArgumentParser(
@@ -37,7 +37,7 @@ def splitData(dataFile):
 def training(args):
     data = getData()
     input_shape = [len(data.features), 24]
-    output_shape = getOutputShape(data.data_train, data.data_valid)
+    output_shape = len(getLabels(data.data_train, data.data_valid))
 
     network = Model.createNetwork([
         Layers.DenseLayer(input_shape, activation='sigmoid'),
@@ -45,7 +45,7 @@ def training(args):
         Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
         Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
         Layers.DenseLayer(output_shape, activation='softmax', weights_initializer='heUniform')
-    ], data.features)
+    ], data)
     Model.fit(network, data, loss=args.loss, learning_rate=args.learning_rate, batch_size=args.batchs, epochs=args.epochs)
 
 
