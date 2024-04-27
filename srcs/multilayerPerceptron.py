@@ -15,7 +15,7 @@ def parsing():
     parser.add_argument('-e', '--epochs', type=int, default=100, help='the number of epochs')
     parser.add_argument('-L', '--learning_rate', type=float, default=0.1, help='the learning rate')
     parser.add_argument('-l', '--loss', default='binaryCrossentropy', help='the loss fonction')
-    parser.add_argument('-b', '--batch', type=int, default=10, help='the batchs size')
+    parser.add_argument('-b', '--batchs', type=int, default=10, help='the batchs size')
     return parser.parse_args()
 
 
@@ -45,8 +45,8 @@ def training(args):
         Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
         Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
         Layers.DenseLayer(output_shape, activation='softmax', weights_initializer='heUniform')
-    ])
-#    Model.fit(network, data, loss='binaryCrossentropy', learning_rate=learningRate, batch_size=batchSize, epochs=epoch)
+    ], data.features)
+    Model.fit(network, data, loss=args.loss, learning_rate=args.learning_rate, batch_size=args.batchs, epochs=args.epochs)
 
 
 if __name__ == '__main__':

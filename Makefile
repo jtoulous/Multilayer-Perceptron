@@ -10,10 +10,9 @@ venv:
 	@echo "$(GREEN)Done.$(RESET)"
 
 install:
-	@echo "$(GREEN)installing dependencies...$(RESET)"
-	@. virtualEnv/bin/activate
-	@pip install -r requirements.txt
-	@echo "$(GREEN)Done.$(RESET)"
+	@echo "$(GREEN)installing dependencies..."
+	@. virtualEnv/bin/activate && pip install -r requirements.txt
+	@echo "Done.$(RESET)"
 
 clean:
 	@echo "$(RED)removing virtual environnement...$(RESET)"
