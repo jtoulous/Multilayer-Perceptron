@@ -138,7 +138,7 @@ def retropropagation(network, batch):
             error = prob - y
             new_errors['errors'][feature] = error
         predictionErrors.append(new_errors)
-    breakpoint()
+        breakpoint()
 
-    for i in range(len(network.layer) - 1, -1, -1):
+    #for i in range(len(network.layer) - 1, -1, -1):
         
