@@ -12,7 +12,6 @@ class Data:
         self.features = copy.deepcopy(features)
 
 
-
 def printLog(message):
     print(f"{Fore.GREEN}{message}{Style.RESET_ALL}")
 
@@ -81,13 +80,10 @@ def getFeaturesToDrop(features):
         printInfo('done: finished\n')
         
         answer = input(f'{Fore.GREEN}Select a feature: {Style.RESET_ALL}')
-        
         if answer == 'all':
             featuresToUse = featuresCopy.copy()
-        
         if answer == 'done' or answer == 'all':
             break
-        
         else:
             try:
                 answer = int(answer)
@@ -107,12 +103,11 @@ def getFeaturesToDrop(features):
 def getData():
     data_train = []
     data_valid = []
-    
     try:
         df_train = pd.read_csv('datasets/training_data.csv', header=None)
         df_valid = pd.read_csv('datasets/validation_data.csv', header=None)
     except Exception:
-        raise Exception('Error: you need to seperate the data before training')
+        raise Exception('Error: you need to separate the data before training')
     
     featuresToUse, featuresToDrop = getFeaturesToDrop(list(df_train.columns[2:]))
     df_train = df_train.drop(columns=featuresToDrop)
@@ -122,17 +117,13 @@ def getData():
     normData = normalizeData(featuresToUse, df_train, df_valid)
 
     for i in range(len(df_train)):
-        newData = {'id': None, 'label': None, 'features': {}}
-        newData['id'] = df_train[0][i]
-        newData['label'] = df_train[1][i]
+        newData = {'id': df_train[0][i], 'label': df_train[1][i], 'features': {}}
         for feature in featuresToUse:
             newData['features'][feature] = df_train[feature][i]
         data_train.append(newData)
 
     for i in range(len(df_valid)):
-        newData = {'id': None, 'label': None, 'features': {}}
-        newData['id'] = df_valid[0][i]
-        newData['label'] = df_valid[1][i]
+        newData = {'id': df_valid[0][i], 'label': df_valid[1][i], 'features': {}}
         for feature in featuresToUse:
             newData['features'][feature] = df_valid[feature][i]
         data_valid.append(newData)
@@ -150,4 +141,3 @@ def getLabels(*dataframes):
         if data['label'] not in labelsEncountered:
             labelsEncountered.append(data['label'])
     return labelsEncountered
-

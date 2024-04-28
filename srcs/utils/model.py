@@ -21,8 +21,7 @@ class Model:
             for batch in batches:
                 for layer in network.layers:
                     batch = activateNeurons(layer, batch)
-                breakpoint()
-                totalCosts.append(getCost(loss))
+                #totalCosts.append(getCost(loss))
                 retropropagation(network, batch)
                 network.resetNetwork()
 
@@ -119,19 +118,27 @@ def activateNeurons(layer, dataset):
                 raise Exception(f'Error: {activation} not available')  
             
             neuron.activationResults.append(activation_res)
-            new_data['features'][str(j)] = activation_res
+            if neuron.label is None:
+                new_data['features'][str(j)] = activation_res
+            else:
+                new_data['features'][neuron.label] = activation_res
         new_dataset.append(new_data)
 
     return new_dataset
 
 
+def retropropagation(network, batch):
+    predictionErrors = []
+    
+    for data in batch:
+        new_errors = {'id': data['id'], 'label': data['label'], 'errors': {}}
+        for feature in data['features']:
+            prob = data['features'][feature]
+            y = 1 if feature == data['label'] else 0
+            error = prob - y
+            new_errors['errors'][feature] = error
+        predictionErrors.append(new_errors)
+    breakpoint()
 
-
-
-
-
-
-
-
-
-
+    for i in range(len(network.layer) - 1, -1, -1):
+        
