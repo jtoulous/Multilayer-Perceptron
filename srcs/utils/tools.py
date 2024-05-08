@@ -11,7 +11,6 @@ class Data:
         self.normData = copy.deepcopy(normData)
         self.features = copy.deepcopy(features)
 
-
 def printLog(message):
     print(f"{Fore.GREEN}{message}{Style.RESET_ALL}")
 

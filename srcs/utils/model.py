@@ -2,8 +2,11 @@ import copy
 import random
 import sys
 
+from colorama import Style, Fore
+from statistics import mean
 from .weight_initializer import heUniform
 from .activation import calcScore, sigmoid, softmax
+from .cost import getMeanCost
 from .tools import getLabels
 
 class Model:
@@ -19,13 +22,16 @@ class Model:
             batches = getBatches(data.data_train, batch_size)
 
             for batch in batches:
+                tmp_batch = copy.deepcopy(batch)
                 for layer in network.layers:
-                    batch = activateNeurons(layer, batch)
-                #totalCosts.append(getCost(loss))
-                retropropagation(network, batch)
+                    tmp_batch = activateNeurons(layer, tmp_batch)
+                totalCosts.append(getMeanCost(loss, tmp_batch))
+                retropropagation(network, batch, tmp_batch, loss, learning_rate)
+#                validation()
                 network.resetNetwork()
-
-
+            #breakpoint()
+            print(f'Epoch {epoch}: {mean(totalCosts)}')
+            meanCostHistory.append(mean(totalCosts))
 
 
 class Network:
@@ -74,6 +80,7 @@ class Layers:
         for neuron in self.neurons:
             neuron.scores = []
             neuron.activationResults = []
+            neuron.errors = None
 
     @staticmethod
     def DenseLayer(shape, activation='sigmoid', weights_initializer='heUniform'):
@@ -88,6 +95,7 @@ class Neuron:
         self.scores = []
         self.activationResults = []
         self.label = None
+        self.errors = None
 
 
 ###############################################################################
@@ -115,7 +123,7 @@ def activateNeurons(layer, dataset):
             elif layer.activation == "softmax":
                 activation_res = softmax(neuron.scores[i], *[nrn.scores[i] for nrn in layer.neurons])
             else:
-                raise Exception(f'Error: {activation} not available')  
+                raise Exception(f'Error: {layer.activation} not available')  
             
             neuron.activationResults.append(activation_res)
             if neuron.label is None:
@@ -127,18 +135,50 @@ def activateNeurons(layer, dataset):
     return new_dataset
 
 
-def retropropagation(network, batch):
-    predictionErrors = []
+def retropropagation(network, batch, tmp_batch, loss, learning_rate):
+    for l in range(len(network.layers) - 1, -1, -1):
+        layer = network.layers[l]
+        prev_layer = network.layers[l - 1] if l != 0 else None
+        next_layer = network.layers[l + 1] if l != len(network.layers) - 1 else None
+        if l == len(network.layers) - 1:
+            for neuron in layer.neurons:
+                neuron.errors = getMeanCost(loss, tmp_batch, neuron.label, retropropagation=True)
+                for w in range(len(neuron.weights)):
+                    mean_activation = mean(prev_layer.neurons[w].activationResults)
+                    neuron.weights[str(w)] = neuron.weights[str(w)] - learning_rate * neuron.errors * mean_activation
+                    #ADD BIAS
+        elif l != 0:
+            for i, neuron in enumerate(layer.neurons):
+                totalError = []
+                weighted_sum = 0
+                for n in next_layer.neurons:
+                    weighted_sum += n.weights[str(i)] * n.errors
+                for activation in neuron.activationResults:
+                    derived_activation = activation * (1 - activation)
+                    totalError.append(weighted_sum * derived_activation)
+                neuron.errors = mean(totalError)
+                for w, weight in enumerate(neuron.weights.keys()):
+                    neuron.weights[weight] = neuron.weights[weight] - learning_rate * neuron.errors * mean(prev_layer.neurons[w].activationResults)
+                
+        else:
+            for i, neuron in enumerate(layer.neurons):
+                totalError = []
+                weighted_sum = 0
+                for n in next_layer.neurons:
+                    weighted_sum += n.weights[str(i)] * n.errors
+                for activation in neuron.activationResults:
+                    derived_activation = activation * (1 - activation)
+                    totalError.append(weighted_sum * derived_activation)
+                neuron.errors = mean(totalError)
+                for w, weight in enumerate(neuron.weights.keys()):
+                    neuron.weights[weight] = neuron.weights[weight] - learning_rate * getMeanGradient(w, batch, neuron.errors)
+
+
+def getMeanGradient(index, batch, error):
+    value_list = []
+    keys_list = list(batch[0]['features'].keys())
     
     for data in batch:
-        new_errors = {'id': data['id'], 'label': data['label'], 'errors': {}}
-        for feature in data['features']:
-            prob = data['features'][feature]
-            y = 1 if feature == data['label'] else 0
-            error = prob - y
-            new_errors['errors'][feature] = error
-        predictionErrors.append(new_errors)
-        breakpoint()
-
-    #for i in range(len(network.layer) - 1, -1, -1):
-        
+        features_values = data['features']
+        value_list.append(features_values[keys_list[index]] * error)
+    return mean(value_list)
