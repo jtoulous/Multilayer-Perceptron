@@ -4,7 +4,7 @@ import argparse as ap
 
 from colorama import Fore, Style
 from utils.model import Model, Network, Layers
-from utils.tools import printError, printLog, printInfo, getData, printNetwork, getLabels
+from utils.tools import printError, printLog, printInfo, getData, printNetwork, getLabels, printNeuron
 
 def parsing():
     parser = ap.ArgumentParser(

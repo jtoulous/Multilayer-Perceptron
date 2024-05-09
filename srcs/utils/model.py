@@ -7,7 +7,7 @@ from statistics import mean
 from .weight_initializer import heUniform
 from .activation import calcScore, sigmoid, softmax
 from .cost import getMeanCost
-from .tools import getLabels
+from .tools import getLabels, printNetwork, printNeuron, printError, printInfo, printLog
 
 class Model:
     @staticmethod
@@ -16,6 +16,7 @@ class Model:
 
     @staticmethod
     def fit(network, data, loss, learning_rate, batch_size, epochs):
+        bestNetworkConfig = copy.deepcopy(network)
         meanCostHistory = []
         for epoch in range(epochs):
             totalCosts = []
@@ -29,9 +30,14 @@ class Model:
                 retropropagation(network, batch, tmp_batch, loss, learning_rate)
 #                validation()
                 network.resetNetwork()
-            #breakpoint()
-            print(f'Epoch {epoch}: {mean(totalCosts)}')
+            
+            meanCost = mean(totalCosts)
             meanCostHistory.append(mean(totalCosts))
+            bestNetworkConfig = copy.deepcopy(network) if meanCost == min(meanCostHistory) else bestNetworkConfig
+            print(f'Epoch {epoch}: {meanCost}')
+#        saveConfig(bestNetworkConfig)
+        printPredictions(bestNetworkConfig, data.data_train, data.data_valid)
+#        printGraphs(meanCostHistory, )
 
 
 class Network:
@@ -144,9 +150,10 @@ def retropropagation(network, batch, tmp_batch, loss, learning_rate):
             for neuron in layer.neurons:
                 neuron.errors = getMeanCost(loss, tmp_batch, neuron.label, retropropagation=True)
                 for w in range(len(neuron.weights)):
-                    mean_activation = mean(prev_layer.neurons[w].activationResults)
-                    neuron.weights[str(w)] = neuron.weights[str(w)] - learning_rate * neuron.errors * mean_activation
-                    #ADD BIAS
+                    neuron.weights[str(w)] = neuron.weights[str(w)] - learning_rate * getMeanGradient(neuron.errors, prev_layer.neurons[w].activationResults)
+                neuron.bias = neuron.bias - learning_rate * neuron.errors
+
+
         elif l != 0:
             for i, neuron in enumerate(layer.neurons):
                 totalError = []
@@ -158,8 +165,9 @@ def retropropagation(network, batch, tmp_batch, loss, learning_rate):
                     totalError.append(weighted_sum * derived_activation)
                 neuron.errors = mean(totalError)
                 for w, weight in enumerate(neuron.weights.keys()):
-                    neuron.weights[weight] = neuron.weights[weight] - learning_rate * neuron.errors * mean(prev_layer.neurons[w].activationResults)
-                
+                    neuron.weights[weight] = neuron.weights[weight] - learning_rate * getMeanGradient(neuron.errors, prev_layer.neurons[w].activationResults)
+                neuron.bias = neuron.bias - learning_rate * neuron.errors
+
         else:
             for i, neuron in enumerate(layer.neurons):
                 totalError = []
@@ -171,10 +179,19 @@ def retropropagation(network, batch, tmp_batch, loss, learning_rate):
                     totalError.append(weighted_sum * derived_activation)
                 neuron.errors = mean(totalError)
                 for w, weight in enumerate(neuron.weights.keys()):
-                    neuron.weights[weight] = neuron.weights[weight] - learning_rate * getMeanGradient(w, batch, neuron.errors)
+                    neuron.weights[weight] = neuron.weights[weight] - learning_rate * getMeanGradientInput(w, batch, neuron.errors)
+                neuron.bias = neuron.bias - learning_rate * neuron.errors
 
 
-def getMeanGradient(index, batch, error):
+def getMeanGradient(neuron_error, activation_results):
+    totalGradients = []
+    for activation in activation_results:
+        totalGradients.append(neuron_error * activation)
+    return mean(totalGradients)   
+
+
+
+def getMeanGradientInput(index, batch, error):
     value_list = []
     keys_list = list(batch[0]['features'].keys())
     
@@ -182,3 +199,24 @@ def getMeanGradient(index, batch, error):
         features_values = data['features']
         value_list.append(features_values[keys_list[index]] * error)
     return mean(value_list)
+
+def printPredictions(bestNetworkConfig, *datasets):
+    full_dataset = []
+    correct_count = 0
+
+    for dataset in datasets:
+        full_dataset.extend(dataset)
+    
+    for layer in bestNetworkConfig.layers:
+        full_dataset = activateNeurons(layer, full_dataset)
+    
+    printInfo('Predictions:\n')
+    for data in full_dataset:
+        prediction = 'Benin' if data['features']['B'] > data['features']['M'] else 'Malignant'
+        tumor_type = 'Malignant' if data['label'] == 'M' else 'Benin'
+        if prediction == tumor_type:
+            printLog(f'ID {data["id"]}: {tumor_type} ====> {prediction}')
+            correct_count += 1
+        else:
+            printError(f'ID {data["id"]}: {tumor_type} ====> {prediction}')
+    printLog(f'\n{int((correct_count / len(full_dataset)) * 100)}% successfull predictions\n')

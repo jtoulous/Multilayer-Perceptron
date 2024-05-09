@@ -24,14 +24,42 @@ def newCmd():
     print ('\n======================================================\n')
 
 def printNetwork(network):
+    newCmd()
     for i, layer in enumerate(network.layers):
-        print(f'layer {i}:\n'
+        print(f'{Fore.RED}layer {i}{Style.RESET_ALL}:\n'
               f'   activation = {layer.activation}\n'
               f'   weight initializer = {layer.weights_initializer}\n'
               f'   type = {layer.type}\n'
               f'   neurons = {len(layer.neurons)}\n'
               f'   prev layer shape = {layer.prevLayerShape}\n'
               f'   shape = {layer.shape}\n')
+    
+def printNeuron(network):
+    newCmd()
+    hidden_layer_count = 1
+    printInfo('Available features:\n')
+    for i in range(len(network.layers)):
+        layer = network.layers[i]
+        if layer.type == 'input':  
+            printInfo(f'{i}: Input layer')
+        elif layer.type == 'output':
+            printInfo(f'{i}: Output layer')
+        else:
+            printInfo(f'{i}: Hidden layer {hidden_layer_count}')
+            hidden_layer_count += 1
+    layer_index = int(input(f'{Fore.GREEN}\nSelect a Layer: {Style.RESET_ALL}'))
+    layer = network.layers[layer_index]
+    
+    printInfo('Available neurons:\n')
+    for n, neurons in enumerate(layer.neurons):
+        printInfo(f'{n}: Neuron {n}')
+    neuron_index = int(input(f'{Fore.GREEN}\nSelect a neuron: {Style.RESET_ALL}'))
+    neuron = layer.neurons[neuron_index]
+    print(f'\n{Fore.RED}Label:{Style.RESET_ALL} {neuron.label}')
+    print(f'\n{Fore.RED}Weights:{Style.RESET_ALL} {neuron.weights}')
+    print(f'\n{Fore.RED}Bias:{Style.RESET_ALL} {neuron.bias}')
+    print(f'\n{Fore.RED}Activation results:{Style.RESET_ALL} {neuron.activationResults}')
+    print(f'\n{Fore.RED}Error:{Style.RESET_ALL} {neuron.errors}')
 
 
 def normalize(mean, std, value):
@@ -128,6 +156,7 @@ def getData():
         data_valid.append(newData)
 
     return Data(data_train, data_valid, normData, featuresToUse)
+
 
 def getLabels(*dataframes):
     fullSet = []
