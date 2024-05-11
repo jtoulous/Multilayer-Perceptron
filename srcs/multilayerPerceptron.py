@@ -1,6 +1,8 @@
 import sys
 import pandas as pd
 import argparse as ap
+import numpy as np
+import random
 
 from colorama import Fore, Style
 from utils.model import Model, Network, Layers
@@ -12,10 +14,11 @@ def parsing():
         description='training model to detect malignant or benin tumors',
         )
     parser.add_argument('dataFile', help='the csv data file')
-    parser.add_argument('-e', '--epochs', type=int, default=100, help='the number of epochs')
+    parser.add_argument('-e', '--epochs', type=int, default=120, help='the number of epochs')
     parser.add_argument('-L', '--learning_rate', type=float, default=0.1, help='the learning rate')
     parser.add_argument('-l', '--loss', default='binaryCrossentropy', help='the loss fonction')
     parser.add_argument('-b', '--batchs', type=int, default=10, help='the batchs size')
+    parser.add_argument('--layer', type=int, nargs='+', default=[24, 24], help='the number of neurons in as many hidden layers desired')
     return parser.parse_args()
 
 
@@ -25,28 +28,31 @@ def splitData(dataFile):
     dataset = dataset.sample(frac=1, random_state=42)
 
     nb_trainingData = int((len(dataset) * 80) / 100)
-    
     training_data = dataset.iloc[:nb_trainingData]
-    test_data = dataset.iloc[nb_trainingData:]
+    validation_data = dataset.iloc[nb_trainingData:]
 
     training_data.to_csv('datasets/training_data.csv', index=False, header=False)
-    test_data.to_csv('datasets/validation_data.csv', index=False, header=False)
+    validation_data.to_csv('datasets/validation_data.csv', index=False, header=False)
     printInfo('Done')
 
 
 def training(args):
     data = getData()
-    input_shape = [len(data.features), 24]
+    #input_shape = [len(data.features), 30]
+    input_shape = len(data.features)
     output_shape = len(getLabels(data.data_train, data.data_valid))
 
     network = Model.createNetwork([
         Layers.DenseLayer(input_shape, activation='sigmoid'),
-        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
-        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
-        Layers.DenseLayer(24, activation='sigmoid', weights_initializer='heUniform'),
+        *Layers.HiddenLayers(args.layer),
         Layers.DenseLayer(output_shape, activation='softmax', weights_initializer='heUniform')
     ], data)
     Model.fit(network, data, loss=args.loss, learning_rate=args.learning_rate, batch_size=args.batchs, epochs=args.epochs)
+
+
+#def prediction(datafile):
+
+
 
 
 if __name__ == '__main__':
@@ -64,7 +70,7 @@ if __name__ == '__main__':
             elif progToUse == "2":
                 training(args)
             #elif progToUse == "3":
-            #    prediction()
+            #    prediction(args.dataFile)
             else:
                 validChoice = 0
 

@@ -7,7 +7,8 @@ from statistics import mean
 from .weight_initializer import heUniform
 from .activation import calcScore, sigmoid, softmax
 from .cost import getMeanCost
-from .tools import getLabels, printNetwork, printNeuron, printError, printInfo, printLog
+from .tools import getLabels, printNetwork, printNeuron, printError, printInfo
+from .tools import printLog, printGraphs, printEpochResult, printDataShapes
 
 class Model:
     @staticmethod
@@ -17,7 +18,10 @@ class Model:
     @staticmethod
     def fit(network, data, loss, learning_rate, batch_size, epochs):
         bestNetworkConfig = copy.deepcopy(network)
-        meanCostHistory = []
+        meanCostHistory = {'train data': [], 'valid data': []}
+        precisionHistory = {'train data': [], 'valid data': []}
+
+        printDataShapes(data)
         for epoch in range(epochs):
             totalCosts = []
             batches = getBatches(data.data_train, batch_size)
@@ -28,24 +32,29 @@ class Model:
                     tmp_batch = activateNeurons(layer, tmp_batch)
                 totalCosts.append(getMeanCost(loss, tmp_batch))
                 retropropagation(network, batch, tmp_batch, loss, learning_rate)
-#                validation()
                 network.resetNetwork()
             
-            meanCost = mean(totalCosts)
-            meanCostHistory.append(mean(totalCosts))
-            bestNetworkConfig = copy.deepcopy(network) if meanCost == min(meanCostHistory) else bestNetworkConfig
-            print(f'Epoch {epoch}: {meanCost}')
+            meanCostValid = validation(network, data.data_valid, loss)
+            meanCostTrain = mean(totalCosts)
+            meanCostHistory['train data'].append(meanCostTrain)
+            meanCostHistory['valid data'].append(meanCostValid)
+            addPrecision(precisionHistory, network, data)
+
+            bestNetworkConfig = copy.deepcopy(network) if meanCostTrain == min(meanCostHistory['train data']) else bestNetworkConfig
+            printEpochResult(epoch, epochs, meanCostTrain, meanCostValid)
+
 #        saveConfig(bestNetworkConfig)
         printPredictions(bestNetworkConfig, data.data_train, data.data_valid)
-#        printGraphs(meanCostHistory, )
+        printGraphs(meanCostHistory, precisionHistory)
 
 
 class Network:
     def __init__(self, layers, data):
         self.layers = layers.copy()
         for i, layer in enumerate(self.layers):
-            if layer.prevLayerShape is None:
-                layer.prevLayerShape = layers[i - 1].shape
+            layer.prevLayerShape = layers[i - 1].shape if i != 0 else layer.shape
+#            if layer.prevLayerShape is None:
+#                layer.prevLayerShape = layers[i - 1].shape
             layer.type = 'input' if i == 0 else 'output' if i == len(self.layers) - 1 else 'hidden'
             if layer.type == 'output':
                 self.defineOutputNeurons(layer, data)
@@ -67,9 +76,11 @@ class Layers:
         self.activation = activation
         self.weights_initializer = weights_initializer
         self.type = None
-        self.neurons = [Neuron() for i in range(shape[1])] if isinstance(shape, list) else [Neuron() for i in range(shape)] 
-        self.shape = shape[1] if isinstance(shape, list) else shape
-        self.prevLayerShape = shape[0] if isinstance(shape, list) else None
+#        self.neurons = [Neuron() for i in range(shape[1])] if isinstance(shape, list) else [Neuron() for i in range(shape)] 
+        self.neurons = [Neuron() for i in range(shape)] 
+#        self.shape = shape[1] if isinstance(shape, list) else shape
+        self.shape = shape
+        #self.prevLayerShape = shape[0] if isinstance(shape, list) else None
 
     def initWeights(self, features):
         if self.weights_initializer == 'heUniform':
@@ -92,6 +103,12 @@ class Layers:
     def DenseLayer(shape, activation='sigmoid', weights_initializer='heUniform'):
         return Layers(shape, activation, weights_initializer)
 
+    @staticmethod
+    def HiddenLayers(layers):
+        layers_list = []
+        for layer_shape in layers:
+            layers_list.append(Layers.DenseLayer(layer_shape, activation='sigmoid', weights_initializer='heUniform'))
+        return layers_list
 
 
 class Neuron:
@@ -146,13 +163,13 @@ def retropropagation(network, batch, tmp_batch, loss, learning_rate):
         layer = network.layers[l]
         prev_layer = network.layers[l - 1] if l != 0 else None
         next_layer = network.layers[l + 1] if l != len(network.layers) - 1 else None
+      
         if l == len(network.layers) - 1:
             for neuron in layer.neurons:
                 neuron.errors = getMeanCost(loss, tmp_batch, neuron.label, retropropagation=True)
                 for w in range(len(neuron.weights)):
                     neuron.weights[str(w)] = neuron.weights[str(w)] - learning_rate * getMeanGradient(neuron.errors, prev_layer.neurons[w].activationResults)
                 neuron.bias = neuron.bias - learning_rate * neuron.errors
-
 
         elif l != 0:
             for i, neuron in enumerate(layer.neurons):
@@ -190,15 +207,14 @@ def getMeanGradient(neuron_error, activation_results):
     return mean(totalGradients)   
 
 
-
 def getMeanGradientInput(index, batch, error):
-    value_list = []
+    totalGradients = []
     keys_list = list(batch[0]['features'].keys())
     
     for data in batch:
         features_values = data['features']
-        value_list.append(features_values[keys_list[index]] * error)
-    return mean(value_list)
+        totalGradients.append(features_values[keys_list[index]] * error)
+    return mean(totalGradients)
 
 def printPredictions(bestNetworkConfig, *datasets):
     full_dataset = []
@@ -220,3 +236,37 @@ def printPredictions(bestNetworkConfig, *datasets):
         else:
             printError(f'ID {data["id"]}: {tumor_type} ====> {prediction}')
     printLog(f'\n{int((correct_count / len(full_dataset)) * 100)}% successfull predictions\n')
+
+
+def validation(network, dataset, loss):
+    tmp_data = copy.deepcopy(dataset)
+    tmp_network = copy.deepcopy(network)
+
+    for layer in tmp_network.layers:
+        tmp_data = activateNeurons(layer, tmp_data)
+    return getMeanCost(loss, tmp_data)
+
+
+def addPrecision(precisionHistory, network, data):
+    data_training = copy.deepcopy(data.data_train)
+    data_validation = copy.deepcopy(data.data_valid)
+
+    tmp_network = copy.deepcopy(network)
+    correct_count = 0
+    for layer in tmp_network.layers:
+        data_training = activateNeurons(layer, data_training)
+    for elem in data_training:
+        prediction = 'M' if elem['features']['M'] > elem['features']['B'] else 'B'
+        if elem['label'] == prediction:
+            correct_count += 1
+    precisionHistory['train data'].append(correct_count / len(data.data_train))
+
+    tmp_network = copy.deepcopy(network)
+    correct_count = 0
+    for layer in tmp_network.layers:
+        data_validation = activateNeurons(layer, data_validation)
+    for elem in data_validation:
+        prediction = 'M' if elem['features']['M'] > elem['features']['B'] else 'B'
+        if elem['label'] == prediction:
+            correct_count += 1
+    precisionHistory['valid data'].append(correct_count / len(data.data_valid))

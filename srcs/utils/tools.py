@@ -1,5 +1,6 @@
 import pandas as pd
 import copy
+import matplotlib.pyplot as plt
 
 from statistics import mean, stdev
 from colorama import Fore, Style
@@ -169,3 +170,42 @@ def getLabels(*dataframes):
         if data['label'] not in labelsEncountered:
             labelsEncountered.append(data['label'])
     return labelsEncountered
+
+
+def printEpochResult(epoch, total_epochs, meanCostTrain, meanCostValid):
+    print(f'epoch {epoch}/{total_epochs} - loss: {meanCostTrain} - val_loss: {meanCostValid}')
+
+
+def printDataShapes(data):
+    print(f'\nx_train shape : ({len(data.data_train)}, {len(data.data_train[0]["features"])})',
+            f'\nx_valid shape : ({len(data.data_valid)}, {len(data.data_valid[0]["features"])})\n')
+
+
+def printGraphs(meanCostHistory, precisionHistory):
+    meanCostTraining = meanCostHistory['train data']
+    meanCostValidation = meanCostHistory['valid data']
+    precisionTraining = precisionHistory['train data']
+    precisionValidation = precisionHistory['valid data']
+    epochs = [i for i in range(len(meanCostTraining))]
+
+    plt.figure(1) 
+    plt.plot(epochs, meanCostTraining, label='training loss')
+    plt.plot(epochs, meanCostValidation, label='validation loss')
+    plt.title("Loss")
+    plt.xlabel("Epochs")
+    plt.ylabel("Losses")
+    plt.legend()
+
+    plt.figure(2)
+    plt.plot(epochs, precisionTraining, label='training precision')
+    plt.plot(epochs, precisionValidation, label='validation precision')
+    plt.title("Precision")
+    plt.xlabel("Epochs")
+    plt.ylabel("Precision")
+    plt.ylim([0.5, 1])
+    plt.legend()
+
+    plt.show(block=False)
+
+    while plt.get_fignums():
+        plt.pause(0.5)
