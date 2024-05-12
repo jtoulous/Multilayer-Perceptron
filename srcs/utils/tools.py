@@ -1,6 +1,7 @@
 import pandas as pd
 import copy
 import matplotlib.pyplot as plt
+import os
 
 from statistics import mean, stdev
 from colorama import Fore, Style
@@ -173,7 +174,7 @@ def getLabels(*dataframes):
 
 
 def printEpochResult(epoch, total_epochs, meanCostTrain, meanCostValid):
-    print(f'epoch {epoch}/{total_epochs} - loss: {meanCostTrain} - val_loss: {meanCostValid}')
+    print(f'epoch {epoch + 1}/{total_epochs} - loss: {meanCostTrain} - val_loss: {meanCostValid}')
 
 
 def printDataShapes(data):
@@ -209,3 +210,114 @@ def printGraphs(meanCostHistory, precisionHistory):
 
     while plt.get_fignums():
         plt.pause(0.5)
+
+
+def saveConfig(network, data):
+    if os.path.exists("utils/network.txt"):
+        os.remove("utils/network.txt")
+    with open('utils/network.txt', 'w') as network_file:
+        
+        network_file.write('Features Used:')
+        for feature in data.features:
+            network_file.write(f'{feature}')
+            if feature != data.features[-1]:
+                network_file.write(',')
+            else:
+                network_file.write('\n')
+
+        network_file.write('Architecture:')
+        for layer in network.layers:
+            network_file.write(f'{layer.shape}|{layer.activation}|{layer.weights_initializer}')
+            if layer != network.layers[-1]:
+                network_file.write(',')
+            else:
+                network_file.write('\n')
+
+        for l, layer in enumerate(network.layers):
+            network_file.write(f'Layer {l} {layer.type}:\n')
+            for n, neuron in enumerate(layer.neurons):
+                if neuron.label == None:    
+                    network_file.write(f'{n}:')
+                else:
+                    network_file.write(f'{neuron.label}:')
+                #weights = list(neuron.weights.values())
+                
+                for k, key in enumerate(neuron.weights.keys()):
+                    network_file.write(f'{key}={neuron.weights[key]}')
+                    if k != len(neuron.weights.keys()) - 1:
+                        network_file.write(',')
+                network_file.write('|')
+                network_file.write(f'{neuron.bias}\n')
+        
+        network_file.write('Means:')
+        for k, key in enumerate(data.normData['means'].keys()):
+            network_file.write(f'{key}={data.normData["means"][key]}')
+            if k != len(data.normData['means'].keys()) - 1:
+                network_file.write(',')
+            else:
+                network_file.write('\n')
+
+        network_file.write('Stds:')
+        for k, key in enumerate(data.normData['stds'].keys()):
+            network_file.write(f'{key}={data.normData["stds"][key]}')
+            if k != len(data.normData['stds'].keys()) - 1:
+                network_file.write(',')
+
+#def getConfig(datafile):
+#    from .model import Network, Model, Layers, Neuron
+#    dataframe = pd.read_csv(datafile, header=None)
+#    dataset = []
+#    features = []
+#    features_to_drop = []
+#    layers = []
+#    architecture = []
+#    network = None
+#    normData = {'means': {}, 'stds': {}}
+#
+#    if not os.path.exists('utils/network.txt'):
+#        raise Exception('Error: run training before running predictions')
+#    
+#    with open('utils/network.txt', 'r') as network_file:
+#        features_line = network_file.readline().split(':')[1]
+#        features = [feat.strip() for feat in features_line.split(',')]
+#        
+#        architecture_line = network_file.readline().split(':')[1]
+#        architecture = [layer.strip() for layer in architecture_line.split(',')]
+#        for layer_info in architecture:
+#            shape, activation, initializer = layer_info.split('|')
+#            layers.append(Layers.DenseLayer(int(shape), activation, initializer))
+#        
+#        network = Model.createNetwork(layers)        
+#        for layer in network.layers:
+#            network_file.readline()
+#            for neuron in layer.neurons:
+#                neuron_line = network_file.readline()
+#                if layer.type == 'output':
+#                    neuron.label = neuron_line.split(':')[0]
+#                neuron_line = neuron_line.split(':')[1]
+#                neuron.bias = float(neuron_line.split('|')[1])
+#                neuron_line = neuron_line.split('|')[0]
+#                for weight_info in neuron_line.split(','):
+#                    neuron.weights[weight_info.split('=')[0]] = float(weight_info.split('=')[1])
+#
+#        means_line = network_file.readline().split(':')[1]
+#        for mean in means_line.split(','):
+#            mean.strip()
+#            normData['means'][mean.split('=')[0]] = float(mean.split('=')[1])
+#        
+#        stds_line = network_file.readline().split(':')[1]
+#        for std in stds_line.split(','):
+#            std.strip()
+#            normData['stds'][std.split('=')[0]] = float(std.split('=')[1])
+#    
+#    for column in dataframe.columns:
+#        if column not in features:
+#            features_to_drop.append(column)
+#    dataframe.drop(features_to_drop)
+#    for i in range(len(dataframe)):
+#        new_data = {'id': dataframe[0][i], 'label': dataframe[1][i], 'features': {}}
+#        for feature in features:
+#            new_data['features'][feature] = dataframe[feature][i]
+#        dataset.append(new_data)
+#
+#    return network, normData, dataset

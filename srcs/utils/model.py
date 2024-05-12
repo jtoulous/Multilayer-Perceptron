@@ -8,19 +8,18 @@ from .weight_initializer import heUniform
 from .activation import calcScore, sigmoid, softmax
 from .cost import getMeanCost
 from .tools import getLabels, printNetwork, printNeuron, printError, printInfo
-from .tools import printLog, printGraphs, printEpochResult, printDataShapes
+from .tools import printLog, printGraphs, printEpochResult, printDataShapes, saveConfig
 
 class Model:
     @staticmethod
-    def createNetwork(layers, features):
-        return Network(layers, features)
+    def createNetwork(layers, data=None):
+        return Network(layers, data)
 
     @staticmethod
     def fit(network, data, loss, learning_rate, batch_size, epochs):
         bestNetworkConfig = copy.deepcopy(network)
         meanCostHistory = {'train data': [], 'valid data': []}
         precisionHistory = {'train data': [], 'valid data': []}
-
         printDataShapes(data)
         for epoch in range(epochs):
             totalCosts = []
@@ -33,7 +32,7 @@ class Model:
                 totalCosts.append(getMeanCost(loss, tmp_batch))
                 retropropagation(network, batch, tmp_batch, loss, learning_rate)
                 network.resetNetwork()
-            
+
             meanCostValid = validation(network, data.data_valid, loss)
             meanCostTrain = mean(totalCosts)
             meanCostHistory['train data'].append(meanCostTrain)
@@ -43,7 +42,7 @@ class Model:
             bestNetworkConfig = copy.deepcopy(network) if meanCostTrain == min(meanCostHistory['train data']) else bestNetworkConfig
             printEpochResult(epoch, epochs, meanCostTrain, meanCostValid)
 
-#        saveConfig(bestNetworkConfig)
+        saveConfig(bestNetworkConfig, data)
         printPredictions(bestNetworkConfig, data.data_train, data.data_valid)
         printGraphs(meanCostHistory, precisionHistory)
 
@@ -56,9 +55,10 @@ class Network:
 #            if layer.prevLayerShape is None:
 #                layer.prevLayerShape = layers[i - 1].shape
             layer.type = 'input' if i == 0 else 'output' if i == len(self.layers) - 1 else 'hidden'
-            if layer.type == 'output':
-                self.defineOutputNeurons(layer, data)
-            layer.initWeights(data.features)
+            if data != None:    
+                if layer.type == 'output':
+                    self.defineOutputNeurons(layer, data)
+                layer.initWeights(data.features)
             
     def defineOutputNeurons(self, layer, data):
         labels = getLabels(data.data_train, data.data_valid)
