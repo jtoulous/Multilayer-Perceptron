@@ -10,7 +10,6 @@ def getMeanCost(loss_function, dataset, neuron_label=None, retropropagation=Fals
 
 def binaryCrossEntropy(dataset, neuron_label, retropropagation):
     errors = []
-    epsilon = 1e-9
 
     if retropropagation is True:
         for data in dataset:
@@ -23,6 +22,5 @@ def binaryCrossEntropy(dataset, neuron_label, retropropagation):
         for data in dataset:
             y = 1 if data['label'] == 'M' else 0
             prob = data['features']['M']
-            #prob = np.clip(data['features']['M'], epsilon, 1 - epsilon)
             errors.append(y * np.log(prob) + (1 - y) * np.log(1 - prob))
         return -np.mean(errors)

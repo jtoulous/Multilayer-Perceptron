@@ -7,7 +7,7 @@ from statistics import mean
 from .weight_initializer import heUniform
 from .activation import calcScore, sigmoid, softmax
 from .cost import getMeanCost
-from .tools import getLabels, printNetwork, printNeuron, printError, printInfo
+from .tools import getLabels, printError, printInfo
 from .tools import printLog, printGraphs, printEpochResult, printDataShapes, saveConfig
 
 class Model:
@@ -52,8 +52,6 @@ class Network:
         self.layers = layers.copy()
         for i, layer in enumerate(self.layers):
             layer.prevLayerShape = layers[i - 1].shape if i != 0 else layer.shape
-#            if layer.prevLayerShape is None:
-#                layer.prevLayerShape = layers[i - 1].shape
             layer.type = 'input' if i == 0 else 'output' if i == len(self.layers) - 1 else 'hidden'
             if data != None:    
                 if layer.type == 'output':
@@ -76,11 +74,8 @@ class Layers:
         self.activation = activation
         self.weights_initializer = weights_initializer
         self.type = None
-#        self.neurons = [Neuron() for i in range(shape[1])] if isinstance(shape, list) else [Neuron() for i in range(shape)] 
         self.neurons = [Neuron() for i in range(shape)] 
-#        self.shape = shape[1] if isinstance(shape, list) else shape
         self.shape = shape
-        #self.prevLayerShape = shape[0] if isinstance(shape, list) else None
 
     def initWeights(self, features):
         if self.weights_initializer == 'heUniform':
@@ -215,6 +210,7 @@ def getMeanGradientInput(index, batch, error):
         features_values = data['features']
         totalGradients.append(features_values[keys_list[index]] * error)
     return mean(totalGradients)
+
 
 def printPredictions(bestNetworkConfig, *datasets):
     full_dataset = []
